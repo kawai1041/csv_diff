@@ -41,9 +41,9 @@ File.open(DIFF_REF, 'r') {|f|
 
 puts "from #{DIFF_ORG} to #{DIFF_REF}"
 (org_keys - ref_keys).each {|k|
-  print "-, " + org[k]
+  print "-," + org[k]
 }
 
 (ref_keys - org_keys).each {|k|
-    print "+, " + ref[k]
+    print "+," + ref[k]
 }
