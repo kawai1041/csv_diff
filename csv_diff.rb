@@ -1,4 +1,5 @@
-#!/usr/local/bin/ruby -KS
+#!/usr/local/bin/ruby
+#
 # encoding: CP932
 #
 # 2015.05.23:KAWAI Toshikazu
@@ -7,43 +8,86 @@
 require 'csv'
 require 'set'
 
-DIFF_ORG = 'org.csv'
-DIFF_REF = 'ref.csv'
-KEYS = '1,2,4'
+#DIFF_ORG = 'org.csv'
+#DIFF_REF = 'ref.csv'
+#KEYS = '1,2,4'
+INI_FILE = 'csv_diff.ini'
+
+class INI
+  attr_reader :keys, :org, :ref
+  def initialize(ini_file = INI_FILE)
+    File.open(ini_file, 'r') {|f|
+      f.each {|line|
+        line.strip!
+        next if line.size == 0 or line[0] == '#'
+        case line
+        when /^file_suffix:(.+)/
+          @file_suffix = $1
+        when /^keys:(.+)/
+          @keys = $1.split(',').map {|e| (e.to_i - 1)}
+        end
+      }
+    }
+    raise "INI file ERROR" if @file_suffix == nil or @keys == nil
+    set_org_ref
+  end
+  
+  private
+  def set_org_ref
+    org_mtime = ref_mtime = Time.new(0)     
+    Dir.glob(@file_suffix + '*').each {|file|
+      mtime = File.stat(file).mtime
+      if mtime > org_mtime
+        org_mtime = mtime
+        @org = file
+        if mtime > ref_mtime
+          org_mtime = ref_mtime
+          ref_mtime = mtime
+          @org = @ref
+          @ref = file
+        end
+      end
+    }
+  end
+    
+end
+
 
 def key(line, keys)
   csv_a = line.parse_csv
-  keys.parse_csv.map {|e| e.to_i - 1}.map {|ee| csv_a[ee]}.join(':::')
+  keys.map {|e| csv_a[e]}.join(':::')
 end
+
+ini = INI.new
 
 org = {}
 org_keys = Set.new
 ref = {}
 ref_keys = Set.new
 
-File.open(DIFF_ORG, 'r') {|f|
+File.open(ini.org, 'r') {|f|
   f.each {|line|
-    k = key(line,KEYS)
+    k = key(line, ini.keys)
     raise "same key #{k} found in org file" if org_keys.include? k
     org_keys << k
-    org[key(line,KEYS)] = line
+    org[key(line, ini.keys)] = line
   }
 }
 
-File.open(DIFF_REF, 'r') {|f|
+File.open(ini.ref, 'r') {|f|
   f.each {|line|
-    k = key(line,KEYS)
+    k = key(line, ini.keys)
     raise "same key #{k} found in ref file" if ref_keys.include? k
     ref_keys << k
-    ref[key(line,KEYS)] = line
+    ref[key(line, ini.keys)] = line
   }
 }
 
-puts "from #{DIFF_ORG} to #{DIFF_REF}"
+puts "from #{ini.org} to #{ini.ref}"
 (org_keys - ref_keys).each {|k|
   print "-," + org[k]
 }
 
 (ref_keys - org_keys).each {|k|
-    print "+," + ref[k]
+  print "+," + ref[k]
 }
