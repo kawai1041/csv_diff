@@ -8,9 +8,6 @@
 require 'csv'
 require 'set'
 
-#DIFF_ORG = 'org.csv'
-#DIFF_REF = 'ref.csv'
-#KEYS = '1,2,4'
 INI_FILE = 'csv_diff.ini'
 
 class INI
@@ -21,21 +18,21 @@ class INI
         line.strip!
         next if line.size == 0 or line[0] == '#'
         case line
-        when /^file_suffix:(.+)/
-          @file_suffix = $1
+        when /^file_prefix:(.+)/
+          @file_prefix = $1
         when /^keys:(.+)/
           @keys = $1.split(',').map {|e| (e.to_i - 1)}
         end
       }
     }
-    raise "INI file ERROR" if @file_suffix == nil or @keys == nil
+    raise "INI file ERROR" if @file_prefix == nil or @keys == nil
     set_org_ref
   end
   
   private
   def set_org_ref
     org_mtime = ref_mtime = Time.new(0)     
-    Dir.glob(@file_suffix + '*').each {|file|
+    Dir.glob(@file_prefix + '*').each {|file|
       mtime = File.stat(file).mtime
       if mtime > org_mtime
         org_mtime = mtime
