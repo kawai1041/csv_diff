@@ -22,11 +22,19 @@ class INI
           @file_prefix = $1
         when /^keys:(.+)/
           @keys = $1.split(',').map {|e| (e.to_i - 1)}
+        when /^org_file:(.+)/
+          @org = $1
+        when /^ref_file:(.+)/
+          @ref = $1
         end
       }
     }
-    raise "INI file ERROR" if @file_prefix == nil or @keys == nil
-    set_org_ref
+    raise "INI file ERROR keys not defined" if @keys == nil
+    raise "INI file ERROR file not defined" if @file_prefix == nil and (@org == nil or @ref == nil)
+    raise "INI FILE ERROR prefix and (org_file, ref_file) both degined" if @file_prefix and (@org or @ref)
+    if @org == nil and @ref == nil
+      set_org_ref
+    end
   end
   
   private
