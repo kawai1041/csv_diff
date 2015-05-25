@@ -73,7 +73,7 @@ ref_keys = Set.new
 File.open(ini.org, 'r') {|f|
   f.each {|line|
     k = key(line, ini.keys)
-    raise "same key #{k} found in org file" if org_keys.include? k
+    puts "same key #{k} found in org file. new record is used" if org_keys.include? k
     org_keys << k
     org[key(line, ini.keys)] = line
   }
@@ -82,7 +82,7 @@ File.open(ini.org, 'r') {|f|
 File.open(ini.ref, 'r') {|f|
   f.each {|line|
     k = key(line, ini.keys)
-    raise "same key #{k} found in ref file" if ref_keys.include? k
+    puts "same key #{k} found in ref file. new record is used" if ref_keys.include? k
     ref_keys << k
     ref[key(line, ini.keys)] = line
   }
