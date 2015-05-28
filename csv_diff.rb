@@ -11,7 +11,7 @@ require 'set'
 INI_FILE = 'csv_diff.ini'
 
 class INI
-  attr_reader :keys, :org, :ref
+  attr_reader :keys, :org, :ref, :out
   def initialize(ini_file = INI_FILE)
     File.open(ini_file, 'r') {|f|
       f.each {|line|
@@ -26,6 +26,8 @@ class INI
           @org = $1
         when /^ref_file:(.+)/
           @ref = $1
+        when /^output_file:(.+)/
+          @out = $1
         end
       }
     }
@@ -34,6 +36,9 @@ class INI
     raise "INI FILE ERROR prefix and (org_file, ref_file) both degined" if @file_prefix and (@org or @ref)
     if @org == nil and @ref == nil
       set_org_ref
+    end
+    if @out == nil
+      @out = 'diff_' + File.basename(@org, ".*") + '_' + File.basename(@ref, ".*") + '.csv'
     end
   end
   
@@ -70,29 +75,32 @@ org_keys = Set.new
 ref = {}
 ref_keys = Set.new
 
-File.open(ini.org, 'r') {|f|
-  f.each {|line|
-    k = key(line, ini.keys)
-    puts "same key #{k} found in org file. new record is used" if org_keys.include? k
-    org_keys << k
-    org[key(line, ini.keys)] = line
+File.open(ini.out, 'w') {|of|
+
+  File.open(ini.org, 'r') {|f|
+    f.each {|line|
+      k = key(line, ini.keys)
+      of.puts "same key #{k} found in org file. new record is used" if org_keys.include? k
+      org_keys << k
+      org[key(line, ini.keys)] = line
+    }
   }
-}
 
-File.open(ini.ref, 'r') {|f|
-  f.each {|line|
-    k = key(line, ini.keys)
-    puts "same key #{k} found in ref file. new record is used" if ref_keys.include? k
-    ref_keys << k
-    ref[key(line, ini.keys)] = line
+  File.open(ini.ref, 'r') {|f|
+    f.each {|line|
+      k = key(line, ini.keys)
+      of.puts "same key #{k} found in ref file. new record is used" if ref_keys.include? k
+      ref_keys << k
+      ref[key(line, ini.keys)] = line
+    }
   }
-}
+  
+  of.puts "from #{ini.org} to #{ini.ref}"
+  (org_keys - ref_keys).each {|k|
+    of.print "-," + org[k]
+  }
 
-puts "from #{ini.org} to #{ini.ref}"
-(org_keys - ref_keys).each {|k|
-  print "-," + org[k]
-}
-
-(ref_keys - org_keys).each {|k|
-  print "+," + ref[k]
+  (ref_keys - org_keys).each {|k|
+    of.print "+," + ref[k]
+  }
 }
