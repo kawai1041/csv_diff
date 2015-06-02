@@ -11,7 +11,7 @@ require 'set'
 INI_FILE = 'csv_diff.ini'
 
 class INI
-  attr_reader :keys, :org, :ref, :out
+  attr_reader :keys, :org, :ref, :out, :header
   def initialize(ini_file = INI_FILE)
     File.open(ini_file, 'r') {|f|
       f.each {|line|
@@ -28,6 +28,12 @@ class INI
           @ref = $1
         when /^output_file:(.+)/
           @out = $1
+        when /^header:(.+)/
+          if $1 =~ /yes/i
+            @header = true
+          else
+            @header = false
+          end
         end
       }
     }
@@ -76,9 +82,12 @@ ref = {}
 ref_keys = Set.new
 
 File.open(ini.out, 'w') {|of|
-
+  header_line = nil
   File.open(ini.org, 'r') {|f|
     f.each {|line|
+      if header_line == nil and ini.header
+        header_line = line
+      end
       k = key(line, ini.keys)
       of.puts "same key #{k} found in org file. new record is used" if org_keys.include? k
       org_keys << k
@@ -96,6 +105,8 @@ File.open(ini.out, 'w') {|of|
   }
   
   of.puts "from #{ini.org} to #{ini.ref}"
+  of.puts '増減' + header_line if ini.header
+    
   (org_keys - ref_keys).each {|k|
     of.print "-," + org[k]
   }
