@@ -105,7 +105,7 @@ File.open(ini.out, 'w') {|of|
   }
   
   of.puts "from #{ini.org} to #{ini.ref}"
-  of.puts '増減' + header_line if ini.header
+  of.puts '増減,' + header_line if ini.header
     
   (org_keys - ref_keys).each {|k|
     of.print "-," + org[k]
